@@ -1,4 +1,4 @@
-name: Windows RDP
+name: Windows Server 2025 RDP
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: windows-rdp
+  group: windows-2025-rdp
   cancel-in-progress: true
 
 jobs:
