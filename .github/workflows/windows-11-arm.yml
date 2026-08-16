@@ -1,0 +1,83 @@
+name: Windows 11 ARM RDP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+concurrency:
+  group: windows-11-arm-rdp
+  cancel-in-progress: true
+
+jobs:
+  rdp:
+    runs-on: windows-11-arm
+    timeout-minutes: 360
+
+    steps:
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:github-actions
+
+      - name: Configure RDP
+        shell: powershell
+        env:
+          RDP_PASSWORD: ${{ secrets.RDP_PASSWORD }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $user = 'rdpuser'
+          $password = ConvertTo-SecureString $env:RDP_PASSWORD -AsPlainText -Force
+
+          New-LocalUser `
+            -Name $user `
+            -Password $password `
+            -PasswordNeverExpires `
+            -AccountNeverExpires `
+            -UserMayNotChangePassword
+
+          Add-LocalGroupMember `
+            -Group 'Remote Desktop Users' `
+            -Member $user
+
+          Add-LocalGroupMember `
+            -Group 'Administrators' `
+            -Member $user
+
+          Set-ItemProperty `
+            'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
+            -Name fDenyTSConnections `
+            -Value 0
+
+          Set-ItemProperty `
+            'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
+            -Name UserAuthentication `
+            -Value 1
+
+          Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
+          Start-Service -Name TermService
+
+          powercfg /setactive SCHEME_MIN
+
+          $ip = tailscale ip -4
+
+          if (-not $ip) {
+              throw 'Tailscale IPv4 address unavailable.'
+          }
+
+          Write-Host "RDP READY"
+          Write-Host "Address : $ip"
+          Write-Host "Username: $user"
+          Write-Host "Port    : 3389"
+          Write-Host "Connect : mstsc /v:$ip"
+
+      - name: Keep alive
+        shell: powershell
+        run: |
+          while ($true) {
+              Start-Sleep -Seconds 300
+          }
