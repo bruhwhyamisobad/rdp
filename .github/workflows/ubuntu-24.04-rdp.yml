@@ -40,6 +40,9 @@ jobs:
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             xfce4 \
+            xfce4-terminal \
+            xfce4-notifyd \
+            tango-icon-theme \
             xrdp \
             xorgxrdp \
             dbus-x11
