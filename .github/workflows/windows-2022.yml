@@ -1,4 +1,4 @@
-name: Windows Server 2022 RDP
+name: Windows Server 2022
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: windows-2022-rdp
+  group: windows-2022
   cancel-in-progress: true
 
 jobs:
