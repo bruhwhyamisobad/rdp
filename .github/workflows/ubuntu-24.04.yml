@@ -37,43 +37,26 @@ jobs:
             exit 1
           fi
 
-          docker run --name kde-container \
-            --privileged \
-            --shm-size=2g \
-            -p 3389:3389 \
-            -d \
-            ubuntu:24.04 \
-            sleep infinity
-
-          docker exec -i -e RDP_PASSWORD="$RDP_PASSWORD" kde-container bash -s << 'EOF'
-          set -euo pipefail
-          user='rdpuser'
-
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          
-          # Install the complete Kubuntu desktop suite and RDP services
-          apt-get install -y \
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             kubuntu-desktop \
             xrdp \
             xorgxrdp \
             dbus-x11
 
-          useradd \
+          sudo useradd \
             --create-home \
             --shell /bin/bash \
             "$user"
 
-          printf '%s:%s\n' "$user" "$RDP_PASSWORD" | chpasswd
+          printf '%s:%s\n' "$user" "$RDP_PASSWORD" | sudo chpasswd
 
-          usermod -aG sudo "$user"
+          sudo usermod -aG sudo "$user"
 
-          # Configure session for full KDE Plasma X11
-          printf '%s\n' 'startplasma-x11' | tee "/home/$user/.xsession" >/dev/null
-          chown "$user:$user" "/home/$user/.xsession"
+          printf '%s\n' 'startplasma-x11' | sudo tee "/home/$user/.xsession" >/dev/null
+          sudo chown "$user:$user" "/home/$user/.xsession"
 
-          /etc/init.d/xrdp start
-          EOF
+          sudo systemctl restart xrdp
 
           ip="$(tailscale ip -4)"
 
@@ -82,7 +65,7 @@ jobs:
             exit 1
           fi
 
-          if ! docker exec kde-container pgrep -x xrdp > /dev/null; then
+          if ! sudo systemctl is-active --quiet xrdp; then
             echo 'xrdp failed to start.'
             exit 1
           fi
