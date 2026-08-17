@@ -56,10 +56,14 @@ jobs:
 
           sudo usermod -aG sudo "$user"
 
-          # Configure XRDP system-wide: Maximal optimization, zero bloat
+          # Fix XRDP certificate permissions for Ubuntu
+          sudo adduser xrdp ssl-cert
+
+          # Configure XRDP system-wide with complete XDG paths and D-Bus isolation
           sudo tee /etc/xrdp/startwm.sh > /dev/null << 'EOF'
           #!/bin/sh
-          export XDG_CONFIG_DIRS="/etc/xdg:/etc"
+          export XDG_DATA_DIRS="/usr/share/xfce4:/usr/share:/usr/local/share"
+          export XDG_CONFIG_DIRS="/etc/xdg"
           unset DBUS_SESSION_BUS_ADDRESS
           unset XDG_RUNTIME_DIR
           exec dbus-launch --exit-with-session startxfce4
