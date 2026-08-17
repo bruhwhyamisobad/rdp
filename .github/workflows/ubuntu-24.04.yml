@@ -56,7 +56,7 @@ jobs:
 
           sudo usermod -aG sudo "$user"
 
-          printf '%s\n' 'startxfce4' | sudo tee "/home/$user/.xsession" >/dev/null
+          printf '%s\n' 'unset DBUS_SESSION_BUS_ADDRESS' 'unset XDG_RUNTIME_DIR' 'startxfce4' | sudo tee "/home/$user/.xsession" >/dev/null
           sudo chown "$user:$user" "/home/$user/.xsession"
 
           sudo systemctl restart xrdp
