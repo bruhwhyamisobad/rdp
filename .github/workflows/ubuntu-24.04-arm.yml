@@ -1,4 +1,4 @@
-name: Ubuntu 24.04 ARM RDP
+name: Ubuntu 24.04 ARM
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ubuntu-24.04-arm-rdp
+  group: ubuntu-24.04-arm
   cancel-in-progress: true
 
 jobs:
