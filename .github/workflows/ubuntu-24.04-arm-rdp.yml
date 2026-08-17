@@ -1,0 +1,85 @@
+name: Ubuntu 24.04 ARM RDP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+concurrency:
+  group: ubuntu-24.04-arm-rdp
+  cancel-in-progress: true
+
+jobs:
+  rdp:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+
+    steps:
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:github-actions
+
+      - name: Configure RDP
+        shell: bash
+        env:
+          RDP_PASSWORD: ${{ secrets.RDP_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          user='rdpuser'
+
+          if [[ -z "$RDP_PASSWORD" ]]; then
+            echo 'RDP_PASSWORD is not set.'
+            exit 1
+          fi
+
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            xfce4 \
+            xfce4-terminal \
+            xfce4-notifyd \
+            tango-icon-theme \
+            xrdp \
+            xorgxrdp \
+            dbus-x11
+
+          sudo useradd \
+            --create-home \
+            --shell /bin/bash \
+            "$user"
+
+          printf '%s:%s\n' "$user" "$RDP_PASSWORD" | sudo chpasswd
+
+          sudo usermod -aG sudo "$user"
+
+          printf '%s\n' 'startxfce4' | sudo tee "/home/$user/.xsession" >/dev/null
+          sudo chown "$user:$user" "/home/$user/.xsession"
+
+          sudo systemctl restart xrdp
+
+          ip="$(tailscale ip -4)"
+
+          if [[ -z "$ip" ]]; then
+            echo 'Tailscale IPv4 address unavailable.'
+            exit 1
+          fi
+
+          if ! sudo systemctl is-active --quiet xrdp; then
+            echo 'xrdp failed to start.'
+            exit 1
+          fi
+
+          echo "RDP READY"
+          echo "Address : $ip"
+          echo "Username: $user"
+          echo "Port    : 3389"
+          echo "Connect : mstsc /v:$ip"
+
+      - name: Keep alive
+        shell: bash
+        run: |
+          sleep infinity
