@@ -1,4 +1,4 @@
-name: Ubuntu 24.04 RDP
+name: Ubuntu 24.04
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ubuntu-24.04-rdp
+  group: ubuntu-24.04
   cancel-in-progress: true
 
 jobs:
