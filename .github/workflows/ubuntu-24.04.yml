@@ -56,12 +56,13 @@ jobs:
 
           sudo usermod -aG sudo "$user"
 
-          # Configure XRDP globally to explicitly strip poisoned environment variables
+          # Configure XRDP system-wide: Maximal optimization, zero bloat
           sudo tee /etc/xrdp/startwm.sh > /dev/null << 'EOF'
           #!/bin/sh
+          export XDG_CONFIG_DIRS="/etc/xdg:/etc"
           unset DBUS_SESSION_BUS_ADDRESS
           unset XDG_RUNTIME_DIR
-          exec startxfce4
+          exec dbus-launch --exit-with-session startxfce4
           EOF
           
           sudo chmod +x /etc/xrdp/startwm.sh
