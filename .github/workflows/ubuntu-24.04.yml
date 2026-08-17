@@ -57,20 +57,23 @@ jobs:
 
           sudo usermod -aG sudo "$user"
 
-          # Fix XRDP certificate permissions for Ubuntu
+          # Fix XRDP certificate permissions on Ubuntu
           sudo adduser xrdp ssl-cert || true
 
-          # Configure XRDP system-wide with the mandatory /etc XDG path and D-Bus isolation
+          # Definitive XRDP startwm.sh configuration:
+          # Cleans GitHub runner leaks and uses Ubuntu's native Xsession wrapper for proper D-Bus initialization.
           sudo tee /etc/xrdp/startwm.sh > /dev/null << 'EOF'
           #!/bin/sh
+
+          unset DBUS_SESSION_BUS_ADDRESS
+          unset XDG_RUNTIME_DIR
+
           if [ -r /etc/default/locale ]; then
             . /etc/default/locale
             export LANG LANGUAGE
           fi
-          export XDG_CONFIG_DIRS="/etc/xdg:/etc"
-          unset DBUS_SESSION_BUS_ADDRESS
-          unset XDG_RUNTIME_DIR
-          exec startxfce4
+
+          exec /etc/X11/Xsession xfce4-session
           EOF
           
           sudo chmod +x /etc/xrdp/startwm.sh
