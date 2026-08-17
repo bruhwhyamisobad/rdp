@@ -56,10 +56,15 @@ jobs:
 
           sudo usermod -aG sudo "$user"
 
-          printf '%s\n' '#!/bin/sh' 'unset DBUS_SESSION_BUS_ADDRESS' 'unset XDG_RUNTIME_DIR' 'exec dbus-launch --exit-with-session startxfce4' | sudo tee "/home/$user/.xsession" >/dev/null
-          sudo chmod +x "/home/$user/.xsession"
-          sudo chown "$user:$user" "/home/$user/.xsession"
-
+          # Configure XRDP globally to explicitly strip poisoned environment variables
+          sudo tee /etc/xrdp/startwm.sh > /dev/null << 'EOF'
+          #!/bin/sh
+          unset DBUS_SESSION_BUS_ADDRESS
+          unset XDG_RUNTIME_DIR
+          exec startxfce4
+          EOF
+          
+          sudo chmod +x /etc/xrdp/startwm.sh
           sudo systemctl restart xrdp
 
           ip="$(tailscale ip -4)"
