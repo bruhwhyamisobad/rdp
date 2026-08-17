@@ -40,6 +40,7 @@ jobs:
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             xfce4 \
+            xfce4-session \
             xfce4-terminal \
             xfce4-notifyd \
             tango-icon-theme \
@@ -57,16 +58,19 @@ jobs:
           sudo usermod -aG sudo "$user"
 
           # Fix XRDP certificate permissions for Ubuntu
-          sudo adduser xrdp ssl-cert
+          sudo adduser xrdp ssl-cert || true
 
-          # Configure XRDP system-wide with complete XDG paths and D-Bus isolation
+          # Configure XRDP system-wide with the mandatory /etc XDG path and D-Bus isolation
           sudo tee /etc/xrdp/startwm.sh > /dev/null << 'EOF'
           #!/bin/sh
-          export XDG_DATA_DIRS="/usr/share/xfce4:/usr/share:/usr/local/share"
-          export XDG_CONFIG_DIRS="/etc/xdg"
+          if [ -r /etc/default/locale ]; then
+            . /etc/default/locale
+            export LANG LANGUAGE
+          fi
+          export XDG_CONFIG_DIRS="/etc/xdg:/etc"
           unset DBUS_SESSION_BUS_ADDRESS
           unset XDG_RUNTIME_DIR
-          exec dbus-launch --exit-with-session startxfce4
+          exec startxfce4
           EOF
           
           sudo chmod +x /etc/xrdp/startwm.sh
