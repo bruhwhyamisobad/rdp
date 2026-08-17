@@ -37,10 +37,22 @@ jobs:
             exit 1
           fi
 
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          docker run --name xfce-container \
+            --privileged \
+            --shm-size=2g \
+            -p 3389:3389 \
+            -d \
+            ubuntu:24.04 \
+            sleep infinity
+
+          docker exec -i -e RDP_PASSWORD="$RDP_PASSWORD" xfce-container bash -s << 'EOF'
+          set -euo pipefail
+          user='rdpuser'
+
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends \
             xfce4 \
-            xfce4-session \
             xfce4-terminal \
             xfce4-notifyd \
             tango-icon-theme \
@@ -48,36 +60,20 @@ jobs:
             xorgxrdp \
             dbus-x11
 
-          sudo useradd \
+          useradd \
             --create-home \
             --shell /bin/bash \
             "$user"
 
-          printf '%s:%s\n' "$user" "$RDP_PASSWORD" | sudo chpasswd
+          printf '%s:%s\n' "$user" "$RDP_PASSWORD" | chpasswd
 
-          sudo usermod -aG sudo "$user"
+          usermod -aG sudo "$user"
 
-          # Fix XRDP certificate permissions on Ubuntu
-          sudo adduser xrdp ssl-cert || true
+          printf '%s\n' 'startxfce4' | tee "/home/$user/.xsession" >/dev/null
+          chown "$user:$user" "/home/$user/.xsession"
 
-          # Definitive XRDP startwm.sh configuration:
-          # Cleans GitHub runner leaks and uses Ubuntu's native Xsession wrapper for proper D-Bus initialization.
-          sudo tee /etc/xrdp/startwm.sh > /dev/null << 'EOF'
-          #!/bin/sh
-
-          unset DBUS_SESSION_BUS_ADDRESS
-          unset XDG_RUNTIME_DIR
-
-          if [ -r /etc/default/locale ]; then
-            . /etc/default/locale
-            export LANG LANGUAGE
-          fi
-
-          exec /etc/X11/Xsession xfce4-session
+          /etc/init.d/xrdp start
           EOF
-          
-          sudo chmod +x /etc/xrdp/startwm.sh
-          sudo systemctl restart xrdp
 
           ip="$(tailscale ip -4)"
 
@@ -86,7 +82,7 @@ jobs:
             exit 1
           fi
 
-          if ! sudo systemctl is-active --quiet xrdp; then
+          if ! docker exec xfce-container pgrep -x xrdp > /dev/null; then
             echo 'xrdp failed to start.'
             exit 1
           fi
