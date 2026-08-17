@@ -31,7 +31,15 @@ jobs:
           $ErrorActionPreference = 'Stop'
 
           $user = 'rdpuser'
-          $password = ConvertTo-SecureString $env:RDP_PASSWORD -AsPlainText -Force
+
+          if (-not $env:RDP_PASSWORD) {
+              throw 'RDP_PASSWORD is not set.'
+          }
+
+          $password = ConvertTo-SecureString `
+              $env:RDP_PASSWORD `
+              -AsPlainText `
+              -Force
 
           New-LocalUser `
             -Name $user `
@@ -39,10 +47,6 @@ jobs:
             -PasswordNeverExpires `
             -AccountNeverExpires `
             -UserMayNotChangePassword
-
-          Add-LocalGroupMember `
-            -Group 'Remote Desktop Users' `
-            -Member $user
 
           Add-LocalGroupMember `
             -Group 'Administrators' `
@@ -61,12 +65,14 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
           Start-Service -Name TermService
 
-          powercfg /setactive SCHEME_MIN
-
           $ip = tailscale ip -4
 
           if (-not $ip) {
               throw 'Tailscale IPv4 address unavailable.'
+          }
+
+          if ((Get-Service -Name TermService).Status -ne 'Running') {
+              throw 'Remote Desktop Services is not running.'
           }
 
           Write-Host "RDP READY"
@@ -78,6 +84,4 @@ jobs:
       - name: Keep alive
         shell: powershell
         run: |
-          while ($true) {
-              Start-Sleep -Seconds 300
-          }
+          Wait-Event
