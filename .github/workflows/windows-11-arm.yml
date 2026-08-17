@@ -1,4 +1,4 @@
-name: Windows 11 ARM RDP
+name: Windows 11 ARM
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: windows-11-arm-rdp
+  group: windows-11-arm
   cancel-in-progress: true
 
 jobs:
